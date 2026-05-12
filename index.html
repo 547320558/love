@@ -1,45 +1,66 @@
-import turtle
-import random
+<!DOCTYPE html>
+<html>
+<head>
+    <title>纯HTML5 Canvas实现爱心与祝福</title>
+    <style>
+        canvas { background: black; display: block; margin: 0 auto; }
+    </style>
+</head>
+<body>
+    <canvas id="myCanvas" width="800" height="600"></canvas>
+    <script>
+        const canvas = document.getElementById('myCanvas');
+        const ctx = canvas.getContext('2d');
+        let step = 0;
+        let isDrawingCards = false;
+        const blessings = [
+            "多喝热水", "好好爱自己", "梦想成真", "早点休息", "要快乐",
+            "万事顺遂", "要平安", "保持好心情", "要好运", "天天开心",
+            "笑口常开", "平安喜乐", "别熬夜", "要健康", "万事胜意"
+        ];
+        const colors = ["#FFC0CB", "#ADD8E6", "#90EE90", "#F0E68C", "#FFA500", "#DDA0DD"];
 
-# 定义祝福语句列表
-blessings = [
-    "多喝热水", "好好爱自己", "梦想成真", "早点休息", "要快乐",
-    "万事顺遂", "要平安", "保持好心情", "要好运", "天天开心",
-    "笑口常开", "平安喜乐", "别熬夜", "要健康", "万事胜意"
-]
+        function draw() {
+            if (!isDrawingCards) {
+                ctx.clearRect(0, 0, 800, 600);
+                step += 0.05;
+                let size = step * 10;
+                let x = 400, y = 300;
+                let dx = 16 * Math.sin(step) **3;
+                let dy = 13 * Math.cos(step) - 5 * Math.cos(2*step) - 2 * Math.cos(3*step) - Math.cos(4*step);
+                dx = dx * 10 + x;
+                dy = -dy * 10 + y;
+                ctx.fillStyle = 'white';
+                ctx.beginPath();
+                ctx.arc(dx, dy, 5, 0, Math.PI * 2);
+                ctx.fill();
+                if (step < 10) {
+                    requestAnimationFrame(draw);
+                } else {
+                    isDrawingCards = true;
+                    drawCards();
+                }
+            }
+        }
 
-# 设置画布
-screen = turtle.Screen()
-screen.setup(800, 600)
-screen.bgcolor("black")
+        function drawCards() {
+            ctx.clearRect(0, 0, 800, 600);
+            for (let i = 0; i < 50; i++) {
+                let text = blessings[Math.floor(Math.random() * blessings.length)];
+                let x = Math.random() * 600 + 100;
+                let y = Math.random() * 400 + 100;
+                let color = colors[Math.floor(Math.random() * colors.length)];
+                ctx.fillStyle = color;
+                ctx.fillRect(x, y, 100, 50);
+                ctx.fillStyle = 'black';
+                ctx.font = '14px Arial';
+                ctx.fillText(text, x + 20, y + 30);
+            }
+            requestAnimationFrame(drawCards);
+        }
 
-# 定义绘制卡片的函数
-def draw_card(text, x, y, color):
-    t = turtle.Turtle()
-    t.hideturtle()
-    t.speed(0)
-    t.penup()
-    t.goto(x, y)
-    t.pendown()
-    t.color(color)
-    t.begin_fill()
-    for _ in range(4):
-        t.forward(100)
-        t.left(90)
-    t.end_fill()
-    t.penup()
-    t.goto(x + 20, y + 30)
-    t.color("black")
-    t.write(text, font=("Arial", 12, "normal"))
-
-# 随机绘制多个卡片
-colors = ["#FFC0CB", "#ADD8E6", "#90EE90", "#F0E68C", "#FFA500", "#DDA0DD"]
-for _ in range(50):
-    text = random.choice(blessings)
-    x = random.randint(-350, 300)
-    y = random.randint(-250, 200)
-    color = random.choice(colors)
-    draw_card(text, x, y, color)
-
-turtle.done()
+        draw();
+    </script>
+</body>
+</html>
 
