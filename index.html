@@ -3,52 +3,50 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>饱满碎冰蓝爱心 · 呼吸旋转</title>
+  <title>粉色粒子立体爱心 | 中空外扩</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
-      background: #010a1a;
+      background: #0d0d1a;
       width: 100vw;
       height: 100vh;
       overflow: hidden;
     }
     canvas { display: block; }
   </style>
+  <!-- 导入 Three.js -->
   <script type="importmap">
     { "imports": { "three": "https://unpkg.com/three@0.126.0/build/three.module.js" } }
   </script>
   <script type="module">
     import * as THREE from 'three';
 
-    // ========== 场景 ==========
+    // ---------- 场景 ----------
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x010a1a);
-    scene.fog = new THREE.FogExp2(0x010a1a, 0.00001);
+    scene.background = new THREE.Color(0x0d0d1a);
+    scene.fog = new THREE.FogExp2(0x0d0d1a, 0.000015);
 
     const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 0.1, 100);
-    camera.position.set(0, 1, 7);
+    camera.position.set(0, 0.8, 7.5);
     camera.lookAt(0, 0, 0);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(innerWidth, innerHeight);
     renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-    renderer.setClearColor(0x010a1a);
+    renderer.setClearColor(0x0d0d1a);
     document.body.appendChild(renderer.domElement);
 
     // 灯光
-    scene.add(new THREE.AmbientLight(0x334466, 0.8));
-    const light1 = new THREE.PointLight(0x88ccff, 1, 10);
-    light1.position.set(2, 2, 3);
-    scene.add(light1);
-    const light2 = new THREE.PointLight(0x5588cc, 0.8, 10);
-    light2.position.set(-2, -1, -2);
-    scene.add(light2);
+    scene.add(new THREE.AmbientLight(0x331122, 0.5));
+    const light = new THREE.DirectionalLight(0xffaacc, 0.8);
+    light.position.set(1, 1, 1);
+    scene.add(light);
 
-    // ========== 背景星点 ==========
+    // ---------- 背景星空 ----------
     const starsGeo = new THREE.BufferGeometry();
-    const starsPos = new Float32Array(600 * 3);
-    for (let i = 0; i < 600 * 3; i += 3) {
-      const r = 5 + Math.random() * 18;
+    const starsPos = new Float32Array(500 * 3);
+    for (let i = 0; i < 500 * 3; i += 3) {
+      const r = 6 + Math.random() * 18;
       const theta = Math.random() * Math.PI * 2;
       const phi = Math.asin((Math.random() * 2) - 1);
       starsPos[i]     = Math.cos(theta) * Math.cos(phi) * r;
@@ -58,124 +56,115 @@
     starsGeo.setAttribute('position', new THREE.BufferAttribute(starsPos, 3));
     const starsMat = new THREE.PointsMaterial({
       size: 0.07,
-      color: 0xaaccff,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-      opacity: 0.6,
-      transparent: true
-    });
-    const stars = new THREE.Points(starsGeo, starsMat);
-    scene.add(stars);
-
-    // ========== 核心：实心爱心几何体 ==========
-    // 用心形曲线拉伸成3D实体
-    function createHeartShape() {
-      const shape = new THREE.Shape();
-      const steps = 80;
-      const scale = 0.09;
-      // 标准心形坐标
-      for (let i = 0; i <= steps; i++) {
-        const t = (i / steps) * Math.PI * 2;
-        const x = 16 * Math.pow(Math.sin(t), 3) * scale;
-        const y = (13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t)) * scale;
-        if (i === 0) shape.moveTo(x, y);
-        else shape.lineTo(x, y);
-      }
-      return shape;
-    }
-
-    const heartShape = createHeartShape();
-    const extrudeSettings = { depth: 0.25, bevelEnabled: true, bevelThickness: 0.12, bevelSize: 0.08, bevelSegments: 5 };
-    const heartGeometry = new THREE.ExtrudeGeometry(heartShape, extrudeSettings);
-    heartGeometry.center();
-
-    // ========== 碎冰蓝着色器材质（模拟光泽） ==========
-    const heartMaterial = new THREE.MeshPhongMaterial({
-      color: 0x7ec8ff,
-      emissive: 0x113355,
-      specular: 0xccddff,
-      shininess: 80,
-      flatShading: false,
-      transparent: true,
-      opacity: 0.92
-    });
-
-    const heartMesh = new THREE.Mesh(heartGeometry, heartMaterial);
-    const heartGroup = new THREE.Group();
-    heartGroup.add(heartMesh);
-    scene.add(heartGroup);
-
-    // ========== 外层光晕粒子（紧贴表面，增强饱满感） ==========
-    const glowParticleCount = 600;
-    const glowPositions = new Float32Array(glowParticleCount * 3);
-    const heartX = t => 16 * Math.pow(Math.sin(t), 3);
-    const heartY = t => 13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t);
-    const gScale = 0.092;
-    for (let i = 0; i < glowParticleCount; i++) {
-      const t = Math.random() * Math.PI * 2;
-      let hx = heartX(t) * gScale;
-      let hy = heartY(t) * gScale;
-      hx += (Math.random() - 0.5) * 0.1;
-      hy += (Math.random() - 0.5) * 0.1;
-      const z = (Math.random() - 0.5) * 0.35;
-      glowPositions[i*3] = hx;
-      glowPositions[i*3+1] = hy;
-      glowPositions[i*3+2] = z;
-    }
-    const glowGeo = new THREE.BufferGeometry();
-    glowGeo.setAttribute('position', new THREE.BufferAttribute(glowPositions, 3));
-    const glowMat = new THREE.PointsMaterial({
-      size: 0.05,
-      color: 0xaaddff,
+      color: 0xff99cc,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
       opacity: 0.5,
       transparent: true
     });
-    const glowPoints = new THREE.Points(glowGeo, glowMat);
-    heartGroup.add(glowPoints);
+    const stars = new THREE.Points(starsGeo, starsMat);
+    scene.add(stars);
 
-    // ========== 呼吸效果（底部） ==========
-    // 缩放中心偏移到底部
-    const originalPositions = heartGeometry.attributes.position.array.slice();
-    const bottomWeights = [];
-    const yMin = -15 * 0.09; // 爱心底部Y
-    const yMax = 15 * 0.09;
-    for (let i = 0; i < originalPositions.length; i += 3) {
-      const y = originalPositions[i + 1];
-      let w = 1 - (y - yMin) / (yMax - yMin);
-      w = Math.max(0, Math.min(1, w));
-      bottomWeights.push(Math.pow(w, 2.5));
+    // ---------- 心形函数 ----------
+    function heartX(t) { return 16 * Math.pow(Math.sin(t), 3); }
+    function heartY(t) {
+      return 13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t);
     }
 
-    function updateBreath(amplitude) {
-      const positions = heartGeometry.attributes.position.array;
-      for (let i = 0; i < positions.length; i += 3) {
-        const ox = originalPositions[i];
-        const oy = originalPositions[i + 1];
-        const oz = originalPositions[i + 2];
-        const w = bottomWeights[i / 3];
-        const dist = Math.sqrt(ox*ox + oy*oy) + 0.001;
-        const nx = ox / dist;
-        const ny = oy / dist;
-        const offset = amplitude * w * 0.4;
-        positions[i]     = ox + nx * offset;
-        positions[i + 1] = oy + ny * offset;
-        positions[i + 2] = oz;
+    // ---------- 生成粒子：外轮廓浓密 + 内部稀疏 + Z轴厚度（中空外扩） ----------
+    const scale = 0.09;
+    const contourCount = 1800;   // 轮廓粒子
+    const innerCount = 300;      // 内部稀疏粒子，仅为点缀
+    const totalCount = contourCount + innerCount;
+    const positions = new Float32Array(totalCount * 3);
+    const colors = new Float32Array(totalCount * 3);
+
+    const pinkBase = new THREE.Color('#ff69b4');   // 热粉红
+    const pinkLight = new THREE.Color('#ffb6c1');  // 浅粉
+    const pinkDeep = new THREE.Color('#c71585');   // 深粉
+
+    for (let i = 0; i < totalCount; i++) {
+      let hx, hy, t, factor, z;
+
+      if (i < contourCount) {
+        // 轮廓粒子：沿曲线密集分布，加厚度
+        t = (i / contourCount) * Math.PI * 2;
+        // 轮廓因子几乎为1，略微向外扩展制造中空感
+        factor = 0.95 + Math.random() * 0.1;
+        hx = heartX(t) * factor * scale;
+        hy = heartY(t) * factor * scale;
+        // Z轴厚度，让爱心看起来立体
+        z = (Math.random() - 0.5) * 1.8 * scale * 15;
+        // 边缘粒子可以稍微向外飘（制造外扩感）
+        const outwards = 0.02 + Math.random() * 0.04;
+        const dist = Math.sqrt(hx*hx + hy*hy) + 0.001;
+        hx += (hx / dist) * outwards;
+        hy += (hy / dist) * outwards;
+      } else {
+        // 内部稀疏粒子：填充内部，但数量很少，保持中空感
+        t = Math.random() * Math.PI * 2;
+        factor = Math.random() * 0.5;  // 内部0~50%
+        hx = heartX(t) * factor * scale;
+        hy = heartY(t) * factor * scale;
+        z = (Math.random() - 0.5) * 0.6 * scale * 15;
+        // 内部粒子更轻微抖动
+        hx += (Math.random() - 0.5) * 0.05;
+        hy += (Math.random() - 0.5) * 0.05;
       }
-      heartGeometry.attributes.position.needsUpdate = true;
-      heartGeometry.computeVertexNormals();
+
+      positions[i * 3]     = hx;
+      positions[i * 3 + 1] = hy;
+      positions[i * 3 + 2] = z;
+
+      // 颜色：轮廓偏亮，内部偏深
+      const colorMix = (i < contourCount) ? 
+        pinkBase.clone().lerp(pinkLight, Math.random() * 0.6) :
+        pinkBase.clone().lerp(pinkDeep, Math.random() * 0.5);
+      colors[i * 3]     = colorMix.r;
+      colors[i * 3 + 1] = colorMix.g;
+      colors[i * 3 + 2] = colorMix.b;
     }
 
-    // ========== 动画循环 ==========
+    const heartGeo = new THREE.BufferGeometry();
+    heartGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    heartGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+    // 圆形发光粒子纹理
+    const canvas = document.createElement('canvas');
+    canvas.width = 32; canvas.height = 32;
+    const ctx = canvas.getContext('2d');
+    ctx.beginPath();
+    ctx.arc(16, 16, 14, 0, 2 * Math.PI);
+    const gradient = ctx.createRadialGradient(16, 16, 0, 16, 16, 14);
+    gradient.addColorStop(0, 'rgba(255,255,255,1)');
+    gradient.addColorStop(0.4, 'rgba(255,200,220,1)');
+    gradient.addColorStop(0.8, 'rgba(255,100,150,0.6)');
+    gradient.addColorStop(1, 'rgba(255,50,100,0)');
+    ctx.fillStyle = gradient;
+    ctx.fill();
+    const particleTexture = new THREE.CanvasTexture(canvas);
+
+    const heartMat = new THREE.PointsMaterial({
+      size: 0.22,
+      map: particleTexture,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      vertexColors: true,
+      opacity: 0.9,
+      transparent: true
+    });
+
+    const heartPoints = new THREE.Points(heartGeo, heartMat);
+    const heartGroup = new THREE.Group();
+    heartGroup.add(heartPoints);
+    scene.add(heartGroup);
+
+    // ---------- 动画 ----------
     function animate() {
       const time = performance.now() * 0.001;
-      // 整体旋转
+      // 整体绕Y轴旋转，展示立体感
       heartGroup.rotation.y = time * 0.6;
-      // 呼吸
-      const breath = (Math.sin(time * 2.5) + 1) / 2;
-      updateBreath(breath);
-      // 星空微动
+      // 星星缓慢旋转
       stars.rotation.y += 0.0002;
       stars.rotation.x += 0.0001;
       renderer.render(scene, camera);
@@ -189,6 +178,9 @@
       camera.updateProjectionMatrix();
       renderer.setSize(innerWidth, innerHeight);
     });
+
+    // 移动端触摸启动动画
+    document.body.addEventListener('touchstart', () => {}, { passive: true });
   </script>
 </body>
 </html>
