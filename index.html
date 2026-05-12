@@ -2,8 +2,8 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>💌 便利签爱心动画</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>便利签爱心动画</title>
     <style>
         * {
             margin: 0;
@@ -15,23 +15,20 @@
             width: 100vw;
             height: 100vh;
             overflow: hidden;
-            background: linear-gradient(135deg, #fce4ec, #f8bbd0);
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            background: linear-gradient(135deg, #fce4ec 0%, #f8bbd0 100%);
             font-family: 'Comic Sans MS', '幼圆', 'YouYuan', sans-serif;
+            user-select: none;
         }
 
-        /* 便利签样式 */
         .note {
             position: absolute;
-            width: 44px;
-            height: 54px;
-            background: #fff9c4;       /* 淡黄底色 */
-            box-shadow: 3px 3px 8px rgba(0, 0, 0, 0.2);
+            left: 0;
+            top: 0;
+            width: 46px;
+            height: 56px;
+            background: #fff9c4;
+            box-shadow: 3px 3px 8px rgba(0, 0, 0, 0.18);
             border-radius: 2px;
-            transform-origin: center;
-            transition: transform 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -39,23 +36,28 @@
             color: #d81b60;
             font-weight: bold;
             text-align: center;
-            line-height: 1.2;
+            line-height: 1.3;
             padding: 4px;
-            /* 模拟便签纸的纹理 */
             background-image: repeating-linear-gradient(
                 0deg,
                 transparent,
                 transparent 8px,
-                rgba(0,0,0,0.03) 8px,
-                rgba(0,0,0,0.03) 10px
+                rgba(0, 0, 0, 0.04) 8px,
+                rgba(0, 0, 0, 0.04) 10px
             );
+            transform-origin: center;
+            /* 初始隐藏 */
+            transform: scale(0);
+            opacity: 0;
+            transition: none;
+            pointer-events: none;
         }
 
         /* 小图钉装饰 */
         .note::before {
             content: '📌';
             position: absolute;
-            top: -10px;
+            top: -12px;
             left: 50%;
             transform: translateX(-50%);
             font-size: 14px;
@@ -63,105 +65,177 @@
             text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
         }
 
-        /* 不同颜色变化 */
+        /* 缤纷色彩 */
         .note:nth-child(odd)  { background-color: #ffcdd2; }
         .note:nth-child(3n)   { background-color: #f8bbd0; }
         .note:nth-child(5n+2) { background-color: #e1bee7; }
         .note:nth-child(7n+4) { background-color: #bbdefb; }
+        .note:nth-child(9n+6) { background-color: #c8e6c9; }
 
-        /* 底部提示 */
+        /* 底部提示文字 */
         .hint {
             position: fixed;
-            bottom: 30px;
+            bottom: 36px;
             left: 50%;
             transform: translateX(-50%);
             color: #ad1457;
             font-size: 18px;
             letter-spacing: 2px;
+            white-space: nowrap;
             opacity: 0;
-            animation: fadeIn 1s 1.5s forwards;
-        }
-        @keyframes fadeIn {
-            to { opacity: 1; }
+            transition: opacity 1.2s;
+            z-index: 10;
         }
     </style>
 </head>
 <body>
     <div id="container"></div>
-    <div class="hint">💗 喜欢你，是便利签上都写不完的心事 💗</div>
+    <div class="hint" id="hint">💗 喜欢你，是便利签都写不完的心事 💗</div>
 
     <script>
         (function() {
             const container = document.getElementById('container');
-            const noteCount = 72;          // 便签数量
-            const heartScale = 19;         // 爱心大小缩放
+            const hint = document.getElementById('hint');
+            const noteCount = 72;          // 便利签数量
+            const heartScale = 12;         // 爱心大小
             const centerX = window.innerWidth / 2;
-            const centerY = window.innerHeight / 2;
+            const centerY = window.innerHeight / 2 - 20;
 
-            // 爱心参数方程
+            // 爱心参数方程（坐标系y轴向下）
             function heartX(t) {
                 return 16 * Math.pow(Math.sin(t), 3);
             }
             function heartY(t) {
-                return - (13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t));
+                return -(13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t));
             }
 
-            const notes = [];
+            // 储存所有便利签的数据
+            const notesData = [];
+            // 甜言蜜语库
+            const words = ['爱你','抱抱','想你','甜蜜','永远','喜欢','心心','❤️','💕','💖','宝贝','520','么么哒','幸福','小太阳','唯一','守候','星光'];
 
-            // 创建所有便签
+            // 1. 创建所有便利签元素（初始不可见）
             for (let i = 0; i < noteCount; i++) {
                 const t = (i / noteCount) * 2 * Math.PI;
-                // 计算爱心上的目标位置
                 const tx = heartX(t) * heartScale + centerX;
                 const ty = heartY(t) * heartScale + centerY;
 
-                // 初始位置：随机散布在画面外或边缘
-                const side = Math.floor(Math.random() * 4); // 0:上,1:右,2:下,3:左
-                let startX, startY;
-                const margin = 120;
-                switch(side) {
-                    case 0: startX = Math.random() * window.innerWidth; startY = -margin; break;
-                    case 1: startX = window.innerWidth + margin; startY = Math.random() * window.innerHeight; break;
-                    case 2: startX = Math.random() * window.innerWidth; startY = window.innerHeight + margin; break;
-                    case 3: startX = -margin; startY = Math.random() * window.innerHeight; break;
-                }
-
-                // 每个便签随机小文字
-                const words = ['爱你','抱抱','想你','甜蜜','永远','喜欢','心心','❤️', '💕','💖','宝贝','520','么么哒','幸福'];
                 const text = words[Math.floor(Math.random() * words.length)];
-
-                // 创建元素
                 const note = document.createElement('div');
                 note.className = 'note';
                 note.textContent = text;
-                // 初始随机轻微旋转
-                const startRotate = (Math.random() - 0.5) * 60;
-                note.style.transform = `translate(${startX}px, ${startY}px) rotate(${startRotate}deg)`;
-                
+
+                // 初始位置：先全部放在屏幕正中心（后面会用 translate 移动）
+                note.style.transform = `translate(${centerX}px, ${centerY}px) scale(0) rotate(0deg)`;
+                note.style.opacity = '0';
                 container.appendChild(note);
-                
-                // 存储目标数据
-                notes.push({
+
+                notesData.push({
                     el: note,
                     targetTx: tx,
                     targetTy: ty,
-                    // 爱心上的最终旋转角度：让便签沿切线方向微微倾斜（可选）
-                    targetRot: (Math.random() - 0.5) * 20
+                    targetRot: (Math.random() - 0.5) * 20,
+                    // 消失时随机飞散的角度和距离
+                    scatterAngle: Math.random() * 2 * Math.PI,
+                    scatterDist: 180 + Math.random() * 160,
+                    // 重新出现时的随机位置
+                    reappearX: 50 + Math.random() * (window.innerWidth - 100),
+                    reappearY: 50 + Math.random() * (window.innerHeight - 100),
+                    reappearRot: (Math.random() - 0.5) * 10
                 });
             }
 
-            // 启动飞入动画（有一点延迟让页面先渲染）
-            setTimeout(() => {
-                notes.forEach((item, index) => {
-                    // 不同便签依次飞入，营造先后感
-                    setTimeout(() => {
-                        item.el.style.transform = 
-                            `translate(${item.targetTx}px, ${item.targetTy}px) rotate(${item.targetRot}deg)`;
-                    }, index * 18);  // 每个间隔18ms
-                });
-            }, 200);
+            // 工具函数：为元素设置 transition 并修改 transform/opacity
+            function setTransition(el, transitionCSS) {
+                el.style.transition = transitionCSS;
+            }
 
-            // 窗口大小变化时重新计算位置（简单起见可刷新页面）
+            // 2. 动画序列控制
+            async function runAnimation() {
+                const [first, ...others] = notesData; // 第一张便利签作为引导
+
+                // ----- 阶段1：第一张便利签弹出 -----
+                setTransition(first.el, 'transform 0.5s cubic-bezier(0.34,1.56,0.64,1), opacity 0.5s');
+                first.el.style.transform = `translate(${centerX}px, ${centerY}px) scale(1) rotate(0deg)`;
+                first.el.style.opacity = '1';
+
+                await wait(700); // 停留欣赏
+
+                // ----- 阶段2：第一张飞向爱心顶点，同时带出其他便利签 -----
+                // 爱心顶点对应 t=0，坐标：heartX(0)=0, heartY(0)=-5 → (centerX, centerY -5*scale)
+                const peakX = centerX;
+                const peakY = centerY - 5 * heartScale;
+
+                // 第一张开始飞行（时长1秒）
+                setTransition(first.el, 'transform 1s ease, opacity 1s');
+                first.el.style.transform = `translate(${peakX}px, ${peakY}px) rotate(${first.targetRot}deg)`;
+
+                // 其他便利签从中心点依次飞出（给一点延迟，制造跟随效果）
+                const startTime = 200; // 在第一张开始飞后200ms启动跟随
+                for (let i = 0; i < others.length; i++) {
+                    setTimeout(() => {
+                        const note = others[i];
+                        setTransition(note.el, 'transform 0.65s ease, opacity 0.65s');
+                        note.el.style.transform = `translate(${note.targetTx}px, ${note.targetTy}px) rotate(${note.targetRot}deg)`;
+                        note.el.style.opacity = '1';
+                    }, startTime + i * 22); // 逐个出现，整体持续约1.6秒
+                }
+
+                // 等待所有飞行动画结束（第一张1s + 其他最晚约 startTime + others.length*22 + 0.65s = 约2.8秒）
+                await wait(3200);
+
+                // ----- 阶段3：爱心停留 -----
+                await wait(1800);
+
+                // ----- 阶段4：爱心消失（所有便利签向外飞散并淡出）-----
+                for (let note of notesData) {
+                    // 计算飞散后的目标位置
+                    const angle = note.scatterAngle;
+                    const dist = note.scatterDist;
+                    const flyX = note.targetTx + Math.cos(angle) * dist;
+                    const flyY = note.targetTy + Math.sin(angle) * dist;
+                    
+                    setTransition(note.el, 'transform 0.8s ease-in, opacity 0.8s ease-in');
+                    note.el.style.transform = `translate(${flyX}px, ${flyY}px) rotate(${note.targetRot + 45}deg)`;
+                    note.el.style.opacity = '0';
+                }
+
+                await wait(1000); // 等待消失完毕
+
+                // ----- 阶段5：便利签重新一个个散落出现 -----
+                // 先将所有便利签移到各自的随机位置，并缩小至不可见
+                for (let note of notesData) {
+                    note.el.style.transition = 'none';
+                    note.el.style.transform = `translate(${note.reappearX}px, ${note.reappearY}px) scale(0) rotate(${note.reappearRot}deg)`;
+                    note.el.style.opacity = '0';
+                }
+
+                // 等待一帧让样式生效
+                await wait(50);
+
+                // 依次弹出
+                for (let i = 0; i < notesData.length; i++) {
+                    setTimeout(() => {
+                        const note = notesData[i];
+                        setTransition(note.el, 'transform 0.45s cubic-bezier(0.34,1.56,0.64,1), opacity 0.45s');
+                        note.el.style.transform = `translate(${note.reappearX}px, ${note.reappearY}px) scale(1) rotate(${note.reappearRot}deg)`;
+                        note.el.style.opacity = '1';
+                    }, i * 55);
+                }
+
+                // 等所有便利签弹出后显示底部文字
+                await wait(notesData.length * 55 + 600);
+                hint.style.opacity = '1';
+            }
+
+            function wait(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+
+            // 启动动画
+            setTimeout(runAnimation, 300);
+
+            // 窗口尺寸变化时刷新页面（简单处理）
             window.addEventListener('resize', () => {
                 location.reload();
             });
