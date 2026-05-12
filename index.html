@@ -1,47 +1,39 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-<head><头>
+<head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>给你看个东西</title>
+  <title>冰晶爱心 · 螺旋回转</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
-      background: #0a0a1a;
-      background: radial-gradient(ellipse at center, #1a0a2e 0%, #0b0b1a 100%);背景: 径向渐变(椭圆 在 中心, #1a0a2e0%, #0b0b1a100%);
+      background: #020b18;
+      background: radial-gradient(ellipse at center, #0a1a3a 0%, #020b18 100%);
       width: 100vw;
       height: 100vh;
       overflow: hidden;
-      font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;字体族: '苹方 SC', 'Hiragino Sans GB', '微软雅黑', 无衬线;
-      touch-action: manipulation;触摸操作: 可操控;
+      font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+      touch-action: manipulation;
       -webkit-tap-highlight-color: transparent;
-      user-select: none;
     }
 
     canvas {
       position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
       display: block;
     }
 
     .text-container {
       position: fixed;
       z-index: 20;
-      top: 50%;
-      left: 50%;
+      top: 50%; left: 50%;
       transform: translate(-50%, -50%);
       text-align: center;
-      color: #fff;
+      color: #d4f0ff;
       opacity: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 1.8rem;
-      transition: opacity 1.2s ease;
+      transition: opacity 2s ease;
       pointer-events: none;
     }
 
@@ -49,148 +41,284 @@
 
     .main-line {
       font-size: 2.8rem;
-      font-weight: 400;
-      letter-spacing: 0.25em;
-      text-shadow: 0 0 30px rgba(255, 200, 220, 0.8);
-      animation: softPulse 2.8s ease-in-out infinite;
+      font-weight: 300;
+      letter-spacing: 0.3em;
+      text-shadow: 0 0 40px #7ec8ff, 0 0 80px #3a8fd4;
+      animation: icePulse 3s ease-in-out infinite;
       font-family: "STKaiti", "KaiTi", "楷体", "PingFang SC", serif;
     }
 
     .sub-line {
-      font-size: 1.4rem;
+      font-size: 1.3rem;
+      margin-top: 1.2rem;
       font-weight: 300;
+      letter-spacing: 0.2em;
+      color: #b8e2ff;
+      text-shadow: 0 0 12px #5aa9d6;
       opacity: 0;
-      animation: fadeSlideUp 1.6s ease forwards;
-      animation-delay: 1.2s;
-      letter-spacing: 0.15em;
-      color: rgba(255, 255, 255, 0.85);
-      text-shadow: 0 0 12px rgba(255, 180, 200, 0.6);
+      animation: fadeUp 2s ease forwards;
+      animation-delay: 1.5s;
     }
 
     .hint-line {
-      font-size: 0.95rem;
+      font-size: 0.9rem;
       margin-top: 2rem;
+      color: rgba(180, 220, 255, 0.6);
+      letter-spacing: 0.1em;
       opacity: 0;
-      animation: fadeIn 2s ease forwards;
-      animation-delay: 3.2s;
-      color: rgba(255, 255, 255, 0.5);颜色: rgba(255, 255, 255, 0.5);
-      letter-spacing字母间距: 0.1em;字间距: 0.1em;
+      animation: fadeUp 2s ease forwards;
+      animation-delay: 3s;
     }
 
-    @keyframes softPulse {
-      0%, 100% { text-shadow: 0 0 30px rgba(255, 180, 200, 0.7); }
-      50% { text-shadow: 0 0 60px rgba(255, 160, 180, 0.9), 0 0 100px rgba(200, 120, 160, 0.4); }
+    @keyframes icePulse {
+      0%, 100% { text-shadow: 0 0 40px #7ec8ff, 0 0 80px #3a8fd4; }
+      50% { text-shadow: 0 0 70px #b0e0ff, 0 0 120px #5aa9d6, 0 0 200px #1a4b7a; }
     }
 
-    @keyframes fadeSlideUp {
+    @keyframes fadeUp {
       0% { opacity: 0; transform: translateY(20px); }
       100% { opacity: 1; transform: translateY(0); }
     }
-
-    @keyframes fadeIn { to { opacity: 1; } }
   </style>
 </head>
 <body>
-  <canvas id="heartCanvas"></canvas>
+  <canvas id="iceHeartCanvas"></canvas>
   <div class="text-container" id="textContainer">
-    <div class="main-line">爱你呦</div>
-    <div class="sub-line"></div>
-    <div class="hint-line"></div>
+    <div class="main-line">我喜欢你</div>
+    <div class="sub-line">像冰晶般纯净而闪耀</div>
+    <div class="hint-line">不用急着回复，只是想让你知道。</div>
   </div>
 
   <script>
-    (function() {(函数() {
-      const canvas = document.getElementById('heartCanvas');
+    (function() {
+      const canvas = document.getElementById('iceHeartCanvas');
       const ctx = canvas.getContext('2d');
       const textContainer = document.getElementById('textContainer');
 
       let width, height;
-      const particles = [];
-      const PARTICLE_COUNT = 160;  // 平衡性能与视觉效果
-      let phase = 'scatter';       // scatter / gathering / heartbeat
-      let transitionProgress = 0;
-      let heartbeatTime = 0;
-      let colorShift = 0;
+      const heartParticles = [];
+      const spiralParticles = [];
+      const starDust = [];
+
+      // 心形轮廓采样点数
+      const HEART_POINTS = 160;
+      // 螺旋粒子数
+      const SPIRAL_COUNT = 60;
+      // 背景星尘数
+      const STAR_COUNT = 80;
+
+      let angleY = 0;          // 绕Y轴旋转角度
+      const rotateSpeed = 0.008;
+      const focalLength = 800; // 透视焦距
+      let centerX, centerY;
+      const heartScaleBase = 0.12;
 
       // 心形参数方程
       function heartX(t) { return 16 * Math.pow(Math.sin(t), 3); }
       function heartY(t) { return 13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t); }
 
-      class Particle {
+      // 粒子类 (冰晶光点)
+      class IceParticle {
+        constructor(x, y, z, type = 'heart') {
+          this.origX = x;   // 爱心局部坐标
+          this.origY = y;
+          this.origZ = z;   // 厚度方向初始为0
+          this.type = type;
+          // 冰晶微参数
+          this.size = Math.random() * 2.5 + 0.8;
+          this.alphaBase = Math.random() * 0.5 + 0.5;
+          this.twinkleSpeed = Math.random() * 0.03 + 0.01;
+          this.twinkleOffset = Math.random() * Math.PI * 2;
+          // 颜色在冰蓝到白之间
+          this.hue = 195 + Math.random() * 25; // 195~220
+          this.saturation = 70 + Math.random() * 30;
+          this.lightness = 70 + Math.random() * 30;
+        }
+
+        // 绕Y轴旋转后投影到2D，返回屏幕坐标和深度因子
+        project(angle) {
+          const cos = Math.cos(angle);
+          const sin = Math.sin(angle);
+          // 旋转
+          const xRot = this.origX * cos - this.origZ * sin;
+          const zRot = this.origX * sin + this.origZ * cos;
+          const yRot = this.origY;
+          // 透视投影
+          const scale = focalLength / (focalLength + zRot);
+          const sx = centerX + xRot * scale;
+          const sy = centerY - yRot * scale; // 注意Y轴方向
+          return { x: sx, y: sy, scale: scale, z: zRot };
+        }
+
+        draw(ctx, time, angle) {
+          const projected = this.project(angle);
+          const { x, y, scale, z } = projected;
+          if (scale < 0.1) return; // 在后方不可见
+
+          const alpha = this.alphaBase * (0.8 + 0.2 * Math.sin(time * this.twinkleSpeed + this.twinkleOffset));
+          const size = Math.max(0.4, this.size * scale);
+
+          // 冰晶光晕 (径向渐变)
+          const glow = ctx.createRadialGradient(x, y, 0, x, y, size * 4);
+          const colorStart = `hsla(${this.hue}, ${this.saturation}%, ${this.lightness}%, ${alpha})`;
+          const colorEnd = `hsla(${this.hue}, ${this.saturation}%, ${this.lightness}%, 0)`;
+          glow.addColorStop(0, colorStart);
+          glow.addColorStop(0.5, `hsla(${this.hue}, ${this.saturation}%, ${this.lightness}%, ${alpha * 0.4})`);
+          glow.addColorStop(1, colorEnd);
+
+          ctx.beginPath();
+          ctx.arc(x, y, size * 4, 0, Math.PI * 2);
+          ctx.fillStyle = glow;
+          ctx.fill();
+
+          // 高亮核心
+          ctx.beginPath();
+          ctx.arc(x, y, size * 0.6, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.9})`;
+          ctx.fill();
+
+          // 十字星芒 (冰晶闪光感)
+          if (Math.random() < 0.3 && size > 1.5) {
+            ctx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.6})`;
+            ctx.lineWidth = 0.5;
+            ctx.beginPath();
+            ctx.moveTo(x - size * 2, y);
+            ctx.lineTo(x + size * 2, y);
+            ctx.moveTo(x, y - size * 2);
+            ctx.lineTo(x, y + size * 2);
+            ctx.stroke();
+          }
+        }
+      }
+
+      // 螺旋粒子 (动态路径)
+      class SpiralParticle {
         constructor() {
-          this.t = Math.random() * Math.PI * 2;  // 记录心形参数t，用于动态效果
           this.reset();
         }
 
         reset() {
-          this.x = Math.random() * width;
-          this.y = Math.random() * height;
-          this.baseX = this.x;
-          this.baseY = this.y;
-          // 目标心形位置（基于参数t）
-          const scale = Math.min(width, height) * 0.018;
-          this.targetX = width / 2 + heartX(this.t) * scale;
-          this.targetY = height / 2 - heartY(this.t) * scale * 0.65;
-          this.size = Math.random() * 2.2 + 0.8;
-          this.alpha = Math.random() * 0.5 + 0.5;
+          // 螺旋参数：半径、角度、高度偏移、速度
+          this.radius = 0;
+          this.angle = Math.random() * Math.PI * 2;
+          this.heightOffset = (Math.random() - 0.5) * 2;
+          this.speed = 0.005 + Math.random() * 0.01;
+          this.maxRadius = 1.0 + Math.random() * 0.4;
+          this.origX = 0;
+          this.origY = 0;
+          this.origZ = 0;
+          // 外观
+          this.size = Math.random() * 2 + 0.5;
+          this.alpha = Math.random() * 0.6 + 0.4;
+          this.hue = 190 + Math.random() * 30;
         }
 
-        update(progress, heartbeatScale) {
-          const eased = 1 - Math.pow(1 - progress, 3);
-          let tx = this.targetX;
-          let ty = this.targetY;
-
-          // 汇聚完成后，应用心跳缩放效果（围绕中心点缩放）
-          if (phase === 'heartbeat') {
-            const cx = width / 2;
-            const cy = height / 2;
-            // 心跳缩放因子：1.0 为正常大小，1.08 为最大
-            const scaleFactor = heartbeatScale || 1.0;
-            tx = cx + (this.targetX - cx) * scaleFactor;
-            ty = cy + (this.targetY - cy) * scaleFactor;
-          }
-
-          this.x = this.baseX + (tx - this.baseX) * eased;
-          this.y = this.baseY + (ty - this.baseY) * eased;
+        update(time) {
+          // 螺旋运动：半径逐渐增大，角度递增，高度周期性变化
+          this.angle += this.speed;
+          this.radius = 0.5 + 0.5 * Math.sin(time * 0.003 + this.heightOffset) * 0.5;
+          // 让螺旋粒子环绕在爱心外围，爱心大小约为 heartScale*17≈0.12*min(w,h)*17
+          // 这里使用标准化坐标，实际绘制时乘以爱心缩放因子
+          const scaleFactor = Math.min(width, height) * heartScaleBase * 17; // 爱心宽度的一半
+          const rScale = scaleFactor * (0.8 + this.radius * 0.7);
+          this.origX = Math.cos(this.angle) * rScale;
+          this.origZ = Math.sin(this.angle) * rScale;
+          this.origY = Math.sin(time * 0.002 + this.heightOffset) * scaleFactor * 0.9;
         }
 
-        draw(ctx, time, progress) {
-          ctx.save();
-          
-          // 动态颜色：基础粉紫色，随时间流淌
-          const hue = 330 + Math.sin(time * 0.002 + this.t * 2) * 15 + colorShift;
-          const lightness = 70 + Math.sin(time * 0.003 + this.t) * 10;
-          this.color = `hsla(${hue}, 85%, ${lightness}%, ${this.alpha})`;
-          
-          // 光晕效果（用径向渐变模拟）
-          const radius = this.size * (1 + 0.3 * Math.sin(time * 0.01 + this.t));
-          const glow = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, radius * 3);
-          glow.addColorStop(0, this.color);
-          glow.addColorStop(0.5, `hsla(${hue}, 85%, ${lightness}%, ${this.alpha * 0.4})`);
-          glow.addColorStop(1, 'transparent');
-          
+        project(angle) {
+          const cos = Math.cos(angle);
+          const sin = Math.sin(angle);
+          const xRot = this.origX * cos - this.origZ * sin;
+          const zRot = this.origX * sin + this.origZ * cos;
+          const yRot = this.origY;
+          const scale = focalLength / (focalLength + zRot);
+          return {
+            x: centerX + xRot * scale,
+            y: centerY - yRot * scale,
+            scale: scale,
+            z: zRot
+          };
+        }
+
+        draw(ctx, time, angle) {
+          const projected = this.project(angle);
+          const { x, y, scale } = projected;
+          if (scale < 0.1) return;
+
+          const alpha = this.alpha * (0.7 + 0.3 * Math.sin(time * 0.02 + this.angle));
+          const size = Math.max(0.3, this.size * scale);
+
+          const glow = ctx.createRadialGradient(x, y, 0, x, y, size * 3);
+          glow.addColorStop(0, `hsla(${this.hue}, 80%, 80%, ${alpha})`);
+          glow.addColorStop(1, `hsla(${this.hue}, 80%, 80%, 0)`);
+          ctx.beginPath();
+          ctx.arc(x, y, size * 3, 0, Math.PI * 2);
           ctx.fillStyle = glow;
-          ctx.shadowColor = this.color;
-          ctx.shadowBlur = radius * 2.5;
-          ctx.beginPath();
-          ctx.arc(this.x, this.y, radius, 0, Math.PI * 2);
           ctx.fill();
-          
-          // 核心亮点
-          ctx.shadowBlur = 0;
-          ctx.fillStyle = `rgba(255, 255, 255, ${this.alpha * 0.8})`;
+
           ctx.beginPath();
-          ctx.arc(this.x, this.y, radius * 0.4, 0, Math.PI * 2);
+          ctx.arc(x, y, size * 0.5, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(255,255,255,${alpha})`;
           ctx.fill();
-          
-          ctx.restore();
         }
       }
 
-      function initParticles() {
-        particles.length = 0;
-        for (let i = 0; i < PARTICLE_COUNT; i++) {
-          particles.push(new Particle());
+      // 背景星尘
+      class Star {
+        constructor() {
+          this.x = Math.random() * width;
+          this.y = Math.random() * height;
+          this.size = Math.random() * 1.5;
+          this.alpha = Math.random() * 0.6;
+          this.twinkle = Math.random() * 0.02;
+        }
+        draw(ctx, time) {
+          const alpha = this.alpha * (0.5 + 0.5 * Math.sin(time * this.twinkle + this.x));
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(200, 230, 255, ${alpha})`;
+          ctx.fill();
+        }
+      }
+
+      function initHeartParticles() {
+        heartParticles.length = 0;
+        const step = (Math.PI * 2) / HEART_POINTS;
+        for (let i = 0; i < HEART_POINTS; i++) {
+          const t = i * step;
+          let hx = heartX(t);
+          let hy = heartY(t);
+          // 添加一些厚度变化 (Z方向)
+          const thickness = (Math.random() - 0.5) * 2.5;
+          // 随机微小偏移让爱心更蓬松
+          hx += (Math.random() - 0.5) * 1.5;
+          hy += (Math.random() - 0.5) * 1.5;
+          heartParticles.push(new IceParticle(hx, hy, thickness, 'heart'));
+        }
+        // 内部填充一些粒子
+        for (let i = 0; i < 40; i++) {
+          const t = Math.random() * Math.PI * 2;
+          const innerFactor = Math.random() * 0.7;
+          let hx = heartX(t) * innerFactor;
+          let hy = heartY(t) * innerFactor;
+          hx += (Math.random() - 0.5) * 1;
+          hy += (Math.random() - 0.5) * 1;
+          heartParticles.push(new IceParticle(hx, hy, (Math.random() - 0.5) * 2, 'heart'));
+        }
+      }
+
+      function initSpiralParticles() {
+        spiralParticles.length = 0;
+        for (let i = 0; i < SPIRAL_COUNT; i++) {
+          spiralParticles.push(new SpiralParticle());
+        }
+      }
+
+      function initStarDust() {
+        starDust.length = 0;
+        for (let i = 0; i < STAR_COUNT; i++) {
+          starDust.push(new Star());
         }
       }
 
@@ -199,119 +327,70 @@
         height = window.innerHeight;
         canvas.width = width;
         canvas.height = height;
-        // 更新目标位置，因为画布大小变了
-        const scale = Math.min(width, height) * 0.018;
-        particles.forEach(p => {
-          p.baseX = Math.random() * width;
-          p.baseY = Math.random() * height;
-          p.targetX = width / 2 + heartX(p.t) * scale;
-          p.targetY = height / 2 - heartY(p.t) * scale * 0.65;
+        centerX = width / 2;
+        centerY = height / 2;
+        // 更新爱心粒子实际坐标（缩放）
+        const scaleH = Math.min(width, height) * heartScaleBase;
+        heartParticles.forEach(p => {
+          p.origX *= scaleH;
+          p.origY *= scaleH;
+          p.origZ *= scaleH * 0.3; // 厚度缩放
         });
+        // 螺旋粒子会动态更新orig，无需重置
+        initStarDust();
       }
 
-      // 心跳动画函数：模拟心脏一收一缩
-      function getHeartbeatScale(time) {
-        // 每分钟72次，周期约0.833秒
-        const period = 0.833;
-        const t = (time % period) / period; // 0到1
-        // 使用贝塞尔曲线模拟心跳：快速收缩 -> 快速膨胀 -> 平缓
-        if (t < 0.15) return 1.0 + 0.08 * Math.sin(t / 0.15 * Math.PI);    // 快速膨胀
-        else if (t < 0.3) return 1.0 - 0.04 * Math.sin((t - 0.15) / 0.15 * Math.PI); // 收缩
-        else return 1.0;  // 平缓期
-      }
+      let animationPhase = 'intro'; // intro -> reveal
+      let introTimer = 0;
+      const INTRO_DURATION = 4.5; // 秒
 
-      let lastTime = 0;
       function animate(timestamp) {
-        if (!lastTime) lastTime = timestamp;
-        const delta = Math.min(timestamp - lastTime, 50); // 防止大帧跳跃
-        lastTime = timestamp;
         const time = timestamp / 1000;
+        ctx.clearRect(0, 0, width, height);
 
-        // 清除画布，带一点拖影效果（半透明填充，制造流星感）
-        ctx.fillStyle = 'rgba(10, 10, 26, 0.15)';
-        ctx.fillRect(0, 0, width, height);
-        // 偶尔完全清除避免残影过重
-        if (Math.random() < 0.05) ctx.clearRect(0, 0, width, height);
+        // 绘制背景星尘
+        starDust.forEach(s => s.draw(ctx, time));
 
-        // 更新汇聚进度
-        if (phase === 'gathering') {
-          transitionProgress += delta * 0.0012; // 约0.8秒完成汇聚
-          if (transitionProgress >= 1) {
-            transitionProgress = 1;
-            phase = 'heartbeat';
-            heartbeatTime = time;
-            // 显示文字
-            setTimeout(() => textContainer.classList.add('visible'), 200);
+        // 更新旋转角度
+        angleY += rotateSpeed;
+
+        // 如果处于intro阶段，爱心缓慢显示
+        if (animationPhase === 'intro') {
+          introTimer += 0.016;
+          if (introTimer >= INTRO_DURATION) {
+            animationPhase = 'reveal';
+            textContainer.classList.add('visible');
           }
         }
 
-        // 处理心跳阶段的色彩流动
-        if (phase === 'heartbeat') {
-          colorShift = Math.sin(time * 0.5) * 15; // 色彩偏移
-        }
-
-        const hbScale = phase === 'heartbeat' ? getHeartbeatScale(time - heartbeatTime) : 1.0;
-
-        // 绘制所有粒子
-        particles.forEach(p => {
-          if (phase === 'scatter') {
-            // 散落状态：轻微飘动
-            p.x = p.baseX + Math.sin(time * 2 + p.t) * 1.5;
-            p.y = p.baseY + Math.cos(time * 2.3 + p.t) * 1.5;
-          } else {
-            p.update(transitionProgress, hbScale);
-          }
-          p.draw(ctx, time, transitionProgress);
+        // 绘制螺旋粒子 (一直存在)
+        spiralParticles.forEach(p => {
+          p.update(time);
+          p.draw(ctx, time, angleY);
         });
 
-        // 额外绘制一些随机星光点缀背景
-        if (Math.random() < 0.3) {
-          const sx = Math.random() * width;
-          const sy = Math.random() * height;
-          ctx.fillStyle = `rgba(255, 255, 255, ${Math.random() * 0.5 + 0.1})`;
-          ctx.beginPath();
-          ctx.arc(sx, sy, Math.random() * 1.2, 0, Math.PI * 2);
-          ctx.fill();
-        }
+        // 绘制爱心粒子 (如果intro阶段，逐渐增加粒子)
+        const drawAll = animationPhase === 'reveal';
+        heartParticles.forEach((p, index) => {
+          if (drawAll || index < Math.floor((introTimer / INTRO_DURATION) * heartParticles.length)) {
+            p.draw(ctx, time, angleY);
+          }
+        });
 
         requestAnimationFrame(animate);
-      }
-
-      function startGathering() {
-        if (phase === 'scatter') {
-          phase = 'gathering';
-          transitionProgress = 0;
-        }
-      }
-
-      // 强制启动动画的兜底机制
-      function forceStart() {
-        if (phase === 'scatter') {
-          startGathering();
-        }
-        // 确保文字最终显示
-        setTimeout(() => textContainer.classList.add('visible'), 5000);
       }
 
       window.addEventListener('load', () => {
         resize();
-        initParticles();
+        initHeartParticles();
+        initSpiralParticles();
+        initStarDust();
         requestAnimationFrame(animate);
-        // 3秒后自动开始汇聚
-        setTimeout(startGathering, 3000);
-        // 再设一个保险：10秒后强制显示
-        setTimeout(forceStart, 10000);
+        // 移动端触摸确保动画运行
+        document.body.addEventListener('touchstart', () => {}, { passive: true });
       });
 
       window.addEventListener('resize', resize);
-      document.body.addEventListener('click', startGathering);
-      // 移动端触摸也触发
-      document.body.addEventListener('touchstart', () => {
-        startGathering();
-        // 有些浏览器需要用户交互才能播放音频/动画，手动触发一次requestAnimationFrame
-        requestAnimationFrame(animate);
-      }, { passive: true });
-
     })();
   </script>
 </body>
