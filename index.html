@@ -12,6 +12,7 @@
     }
 
     body {
+      background: #0b0b1a; /* 兜底深色背景 */
       background: radial-gradient(ellipse at center, #1a0a2e 0%, #0b0b1a 100%);
       width: 100vw;
       height: 100vh;
@@ -30,12 +31,12 @@
       left: 0;
       width: 100%;
       height: 100%;
-      pointer-events: none;
+      display: block; /* 确保显示 */
     }
 
     .text-container {
-      position: relative;
-      z-index: 10;
+      position: fixed;
+      z-index: 20;
       text-align: center;
       color: #fff;
       opacity: 0;
@@ -124,59 +125,38 @@
 
       let width, height;
       const particles = [];
-      const PARTICLE_COUNT = 280;
-      const heartScale = 15;  // 心形大小系数
-      let phase = 'scatter';  // scatter / gathering / heart
-      let transitionProgress = 0; // 0->1 表示聚集进度
+      const PARTICLE_COUNT = 200; // 降低数量提高性能
+      const heartScale = Math.min(window.innerWidth, window.innerHeight) * 0.018; // 动态尺寸
+      let phase = 'scatter';
+      let transitionProgress = 0;
       let showTextTimer = null;
+      let animationId = null;
 
-      // 心形参数方程：x = 16 sin^3(t), y = 13cos(t) - 5cos(2t) - 2cos(3t) - cos(4t)
-      function heartX(t) {
-        return 16 * Math.pow(Math.sin(t), 3);
-      }
+      function heartX(t) { return 16 * Math.pow(Math.sin(t), 3); }
+      function heartY(t) { return 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t); }
 
-      function heartY(t) {
-        return 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
-      }
-
-      // 粒子类
       class Particle {
-        constructor() {
-          this.reset();
-        }
-
+        constructor() { this.reset(); }
         reset() {
-          // 初始随机散布在全屏幕
           this.x = Math.random() * width;
           this.y = Math.random() * height;
           this.baseX = this.x;
           this.baseY = this.y;
-          // 目标心形位置 (相对画布中心的偏移)
           const t = Math.random() * Math.PI * 2;
-          const hx = heartX(t);
-          const hy = heartY(t);
-          this.targetX = width / 2 + hx * heartScale;
-          // 翻转 Y 使心尖朝下
-          this.targetY = height / 2 - hy * heartScale * 0.65;
-
+          this.targetX = width / 2 + heartX(t) * heartScale;
+          this.targetY = height / 2 - heartY(t) * heartScale * 0.65;
           this.size = Math.random() * 2.2 + 0.8;
           this.alpha = Math.random() * 0.6 + 0.4;
-          this.color = `hsla(${Math.random() * 30 + 330}, 80%, 75%, ${this.alpha})`; // 粉紫调
-          this.speedFactor = Math.random() * 0.5 + 0.4;
+          this.color = `hsla(${Math.random() * 30 + 330}, 80%, 75%, ${this.alpha})`;
         }
 
         update(progress) {
-          // 使用缓动让粒子先快后慢地聚集
-          const eased = easeOutCubic(progress);
+          const eased = 1 - Math.pow(1 - progress, 3);
           this.x = this.baseX + (this.targetX - this.baseX) * eased;
           this.y = this.baseY + (this.targetY - this.baseY) * eased;
-
-          // 到达目标后微微浮动
           if (phase === 'heart') {
-            const floatX = (Math.sin(Date.now() * 0.002 + this.targetX * 0.05) * 1.2);
-            const floatY = (Math.cos(Date.now() * 0.0018 + this.targetY * 0.05) * 1.2);
-            this.x += floatX;
-            this.y += floatY;
+            this.x += Math.sin(Date.now() * 0.002 + this.targetX * 0.05) * 1.2;
+            this.y += Math.cos(Date.now() * 0.0018 + this.targetY * 0.05) * 1.2;
           }
         }
 
@@ -193,15 +173,9 @@
         }
       }
 
-      function easeOutCubic(t) {
-        return 1 - Math.pow(1 - t, 3);
-      }
-
       function initParticles() {
         particles.length = 0;
-        for (let i = 0; i < PARTICLE_COUNT; i++) {
-          particles.push(new Particle());
-        }
+        for (let i = 0; i < PARTICLE_COUNT; i++) particles.push(new Particle());
       }
 
       function resize() {
@@ -209,74 +183,63 @@
         height = window.innerHeight;
         canvas.width = width;
         canvas.height = height;
-        // 重新设置散布位置
+        const newScale = Math.min(width, height) * 0.018;
         particles.forEach(p => {
           p.baseX = Math.random() * width;
           p.baseY = Math.random() * height;
           const t = Math.random() * Math.PI * 2;
-          p.targetX = width / 2 + heartX(t) * heartScale;
-          p.targetY = height / 2 - heartY(t) * heartScale * 0.65;
+          p.targetX = width / 2 + heartX(t) * newScale;
+          p.targetY = height / 2 - heartY(t) * newScale * 0.65;
         });
       }
 
       function animate() {
         ctx.clearRect(0, 0, width, height);
-
-        // 更新过渡
         if (phase === 'gathering') {
           transitionProgress += 0.008;
           if (transitionProgress >= 1) {
             transitionProgress = 1;
             phase = 'heart';
-            // 心形稳定后显示文字
             if (showTextTimer) clearTimeout(showTextTimer);
-            showTextTimer = setTimeout(() => {
-              textContainer.classList.add('visible');
-            }, 400);
+            showTextTimer = setTimeout(() => textContainer.classList.add('visible'), 400);
           }
         }
-
-        // 绘制粒子
         particles.forEach(p => {
-          if (phase === 'scatter') {如果 (阶段 === '散射') {
-            // 初始散乱状态，粒子轻微飘动
+          if (phase === 'scatter') {
             p.x = p.baseX + Math.sin(Date.now() * 0.001 + p.y * 0.03) * 0.8;
             p.y = p.baseY + Math.cos(Date.now() * 0.0012 + p.x * 0.03) * 0.8;
-          } else if (phase === 'gathering' || phase === 'heart') {
+          } else {
             p.update(transitionProgress);
           }
           p.draw(ctx);
         });
-
-        requestAnimationFrame(animate);
+        animationId = requestAnimationFrame(animate);
       }
 
-      // 启动：先散乱3秒，然后开始聚集
       function startGathering() {
-        phase = 'gathering';
-        transitionProgress = 0;
+        if (phase === 'scatter') {
+          phase = 'gathering';
+          transitionProgress = 0;
+        }
       }
+
+      // 紧急兜底：如果Canvas完全没反应，3秒后强制显示文字
+      const fallbackTimer = setTimeout(() => {
+        if (phase === 'scatter') {
+          startGathering();
+        }
+        textContainer.classList.add('visible');
+      }, 5000);
 
       window.addEventListener('load', () => {
-        resize();调整大小();
-        initParticles();初始化粒子();
-        animate();动画();
-
-        // 3秒后粒子开始汇聚成心形
+        resize();
+        initParticles();
+        animate();
         setTimeout(startGathering, 3000);
       });
 
-      window.addEventListener('resize', () => {
-        resize();调整大小();
-      });
-
-      // 移动端点击或触摸也可以触发？（可选加速显示）
-      document.body.addEventListener('click', () => {
-        if (phase === 'scatter') {如果 (阶段 === '散射') {
-          startGathering();开始收集();
-        }
-      });
-
+      window.addEventListener('resize', resize);
+      document.body.addEventListener('click', startGathering);
     })();
   </script>
 </body>
