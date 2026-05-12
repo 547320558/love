@@ -72,6 +72,20 @@
         .note:nth-child(7n+4) { background-color: #bbdefb; }
         .note:nth-child(9n+6) { background-color: #c8e6c9; }
 
+        /* 特殊爱你呦便利贴样式 */
+        .special-note {
+            width: 90px !important;
+            height: 100px !important;
+            font-size: 18px !important;
+            background: #ffecb3 !important;
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.25) !important;
+            z-index: 20 !important;
+        }
+        .special-note::before {
+            font-size: 18px !important;
+            top: -14px !important;
+        }
+
         /* 底部提示文字 */
         .hint {
             position: fixed;
@@ -90,18 +104,18 @@
 </head>
 <body>
     <div id="container"></div>
-    <div class="hint" id="hint">💗 爱你呦 💗</div>
+    <div class="hint" id="hint">💗 喜欢你，是便利签都写不完的心事 💗</div>
 
     <script>
         (function() {
             const container = document.getElementById('container');
             const hint = document.getElementById('hint');
-            const noteCount = 72;          // 便利签数量
-            const heartScale = 12;         // 爱心大小
+            const noteCount = 72;
+            const heartScale = 12;
             const centerX = window.innerWidth / 2;
             const centerY = window.innerHeight / 2 - 20;
 
-            // 爱心参数方程（坐标系y轴向下）
+            // 爱心参数方程（y轴向下）
             function heartX(t) {
                 return 16 * Math.pow(Math.sin(t), 3);
             }
@@ -109,14 +123,12 @@
                 return -(13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t));
             }
 
-            // 储存所有便利签的数据
             const notesData = [];
-            // 甜言蜜语库
             const words = ["多喝热水", "好好爱自己", "梦想成真", "早点休息", "要快乐",
          "万事顺遂", "要平安", "保持好心情", "要好运", "天天开心",
-         "笑口常开", "平安喜乐", "别熬夜", "要健康", "万事胜意"];
+         "笑口常开", "平安喜乐", "别熬夜", "要健康", "万事胜意","要暴富"];
 
-            // 1. 创建所有便利签元素（初始不可见）
+            // 创建所有便利签元素
             for (let i = 0; i < noteCount; i++) {
                 const t = (i / noteCount) * 2 * Math.PI;
                 const tx = heartX(t) * heartScale + centerX;
@@ -127,7 +139,6 @@
                 note.className = 'note';
                 note.textContent = text;
 
-                // 初始位置：先全部放在屏幕正中心（后面会用 translate 移动）
                 note.style.transform = `translate(${centerX}px, ${centerY}px) scale(0) rotate(0deg)`;
                 note.style.opacity = '0';
                 container.appendChild(note);
@@ -137,85 +148,67 @@
                     targetTx: tx,
                     targetTy: ty,
                     targetRot: (Math.random() - 0.5) * 20,
-                    // 消失时随机飞散的角度和距离
                     scatterAngle: Math.random() * 2 * Math.PI,
                     scatterDist: 180 + Math.random() * 160,
-                    // 重新出现时的随机位置
                     reappearX: 50 + Math.random() * (window.innerWidth - 100),
                     reappearY: 50 + Math.random() * (window.innerHeight - 100),
                     reappearRot: (Math.random() - 0.5) * 10
                 });
             }
 
-            // 工具函数：为元素设置 transition 并修改 transform/opacity
             function setTransition(el, transitionCSS) {
                 el.style.transition = transitionCSS;
             }
 
-            // 2. 动画序列控制
             async function runAnimation() {
-                const [first, ...others] = notesData; // 第一张便利签作为引导
+                const [first, ...others] = notesData;
 
-                // ----- 阶段1：第一张便利签弹出 -----
+                // ---- 阶段1：第一张便利签弹出 ----
                 setTransition(first.el, 'transform 0.5s cubic-bezier(0.34,1.56,0.64,1), opacity 0.5s');
                 first.el.style.transform = `translate(${centerX}px, ${centerY}px) scale(1) rotate(0deg)`;
                 first.el.style.opacity = '1';
+                await wait(800);
 
-                await wait(700); // 停留欣赏
-
-                // ----- 阶段2：第一张飞向爱心顶点，同时带出其他便利签 -----
-                // 爱心顶点对应 t=0，坐标：heartX(0)=0, heartY(0)=-5 → (centerX, centerY -5*scale)
+                // ---- 阶段2：第一张飞向爱心顶点，同时带出其余便利签 ----
                 const peakX = centerX;
                 const peakY = centerY - 5 * heartScale;
-
-                // 第一张开始飞行（时长1秒）
                 setTransition(first.el, 'transform 1s ease, opacity 1s');
                 first.el.style.transform = `translate(${peakX}px, ${peakY}px) rotate(${first.targetRot}deg)`;
 
-                // 其他便利签从中心点依次飞出（给一点延迟，制造跟随效果）
-                const startTime = 200; // 在第一张开始飞后200ms启动跟随
+                const startTime = 200;
                 for (let i = 0; i < others.length; i++) {
                     setTimeout(() => {
                         const note = others[i];
                         setTransition(note.el, 'transform 0.65s ease, opacity 0.65s');
                         note.el.style.transform = `translate(${note.targetTx}px, ${note.targetTy}px) rotate(${note.targetRot}deg)`;
                         note.el.style.opacity = '1';
-                    }, startTime + i * 22); // 逐个出现，整体持续约1.6秒
+                    }, startTime + i * 22);
                 }
-
-                // 等待所有飞行动画结束（第一张1s + 其他最晚约 startTime + others.length*22 + 0.65s = 约2.8秒）
                 await wait(3200);
 
-                // ----- 阶段3：爱心停留 -----
+                // ---- 阶段3：爱心停留 ----
                 await wait(1800);
 
-                // ----- 阶段4：爱心消失（所有便利签向外飞散并淡出）-----
+                // ---- 阶段4：爱心消失（向外飞散并淡出）----
                 for (let note of notesData) {
-                    // 计算飞散后的目标位置
                     const angle = note.scatterAngle;
                     const dist = note.scatterDist;
                     const flyX = note.targetTx + Math.cos(angle) * dist;
                     const flyY = note.targetTy + Math.sin(angle) * dist;
-                    
                     setTransition(note.el, 'transform 0.8s ease-in, opacity 0.8s ease-in');
                     note.el.style.transform = `translate(${flyX}px, ${flyY}px) rotate(${note.targetRot + 45}deg)`;
                     note.el.style.opacity = '0';
                 }
+                await wait(1000);
 
-                await wait(1000); // 等待消失完毕
-
-                // ----- 阶段5：便利签重新一个个散落出现 -----
-                // 先将所有便利签移到各自的随机位置，并缩小至不可见
+                // ---- 阶段5：便利签重新一个个散落出现 ----
                 for (let note of notesData) {
                     note.el.style.transition = 'none';
                     note.el.style.transform = `translate(${note.reappearX}px, ${note.reappearY}px) scale(0) rotate(${note.reappearRot}deg)`;
                     note.el.style.opacity = '0';
                 }
-
-                // 等待一帧让样式生效
                 await wait(50);
 
-                // 依次弹出
                 for (let i = 0; i < notesData.length; i++) {
                     setTimeout(() => {
                         const note = notesData[i];
@@ -225,8 +218,30 @@
                     }, i * 55);
                 }
 
-                // 等所有便利签弹出后显示底部文字
-                await wait(notesData.length * 55 + 600);
+                // ---- 阶段6：「爱你呦」特殊便利贴飞入 ----
+                // 等散落的便利签都弹出后，再展示最后的重点
+                await wait(notesData.length * 55 + 400);
+
+                // 创建特殊便利贴
+                const special = document.createElement('div');
+                special.className = 'note special-note';
+                special.textContent = '爱你呦';
+                // 初始位置：屏幕下方外部
+                const specialStartX = centerX;
+                const specialStartY = window.innerHeight + 100;
+                special.style.transition = 'none';
+                special.style.transform = `translate(${specialStartX}px, ${specialStartY}px) scale(0) rotate(0deg)`;
+                special.style.opacity = '0';
+                container.appendChild(special);
+
+                // 强制重绘后播放飞入动画
+                await wait(30);
+                setTransition(special, 'transform 0.8s cubic-bezier(0.34,1.56,0.64,1), opacity 0.8s');
+                special.style.transform = `translate(${centerX}px, ${centerY + 80}px) scale(1) rotate(-3deg)`;
+                special.style.opacity = '1';
+
+                // 飞入完成后稍等，再显示底部文字
+                await wait(900);
                 hint.style.opacity = '1';
             }
 
@@ -234,10 +249,8 @@
                 return new Promise(resolve => setTimeout(resolve, ms));
             }
 
-            // 启动动画
-            setTimeout(runAnimation, 300);
+            setTimeout(runAnimation, 400);
 
-            // 窗口尺寸变化时刷新页面（简单处理）
             window.addEventListener('resize', () => {
                 location.reload();
             });
