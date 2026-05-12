@@ -1,174 +1,45 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>粉色粒子包裹爱心 | 立体外壳 2.0</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      background: #0d0d1a;
-      width: 100vw;
-      height: 100vh;
-      overflow: hidden;
-    }
-    canvas { display: block; }
-  </style>
-  <script type="importmap">
-    { "imports": { "three": "https://unpkg.com/three@0.126.0/build/three.module.js" } }
-  </script>
-  <script type="module">
-    import * as THREE from 'three';
+import turtle
+import random
 
-    // ---------- 场景 ----------
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0d0d1a);
-    scene.fog = new THREE.FogExp2(0x0d0d1a, 0.000005);
+# 定义祝福语句列表
+blessings = [
+    "多喝热水", "好好爱自己", "梦想成真", "早点休息", "要快乐",
+    "万事顺遂", "要平安", "保持好心情", "要好运", "天天开心",
+    "笑口常开", "平安喜乐", "别熬夜", "要健康", "万事胜意"
+]
 
-    const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 0.1, 100);
-    camera.position.set(0, 0.5, 7);
-    camera.lookAt(0, 0, 0);
+# 设置画布
+screen = turtle.Screen()
+screen.setup(800, 600)
+screen.bgcolor("black")
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(innerWidth, innerHeight);
-    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-    renderer.setClearColor(0x0d0d1a);
-    document.body.appendChild(renderer.domElement);
+# 定义绘制卡片的函数
+def draw_card(text, x, y, color):
+    t = turtle.Turtle()
+    t.hideturtle()
+    t.speed(0)
+    t.penup()
+    t.goto(x, y)
+    t.pendown()
+    t.color(color)
+    t.begin_fill()
+    for _ in range(4):
+        t.forward(100)
+        t.left(90)
+    t.end_fill()
+    t.penup()
+    t.goto(x + 20, y + 30)
+    t.color("black")
+    t.write(text, font=("Arial", 12, "normal"))
 
-    // 灯光
-    scene.add(new THREE.AmbientLight(0x331122, 0.7));
-    const dirLight = new THREE.DirectionalLight(0xffaacc, 0.9);
-    dirLight.position.set(1, 1, 1);
-    scene.add(dirLight);
+# 随机绘制多个卡片
+colors = ["#FFC0CB", "#ADD8E6", "#90EE90", "#F0E68C", "#FFA500", "#DDA0DD"]
+for _ in range(50):
+    text = random.choice(blessings)
+    x = random.randint(-350, 300)
+    y = random.randint(-250, 200)
+    color = random.choice(colors)
+    draw_card(text, x, y, color)
 
-    // 背景星点
-    const starsGeo = new THREE.BufferGeometry();
-    const starsPos = new Float32Array(400 * 3);
-    for (let i = 0; i < 400 * 3; i += 3) {
-      const r = 6 + Math.random() * 18;
-      const theta = Math.random() * Math.PI * 2;
-      const phi = Math.asin((Math.random() * 2) - 1);
-      starsPos[i]     = Math.cos(theta) * Math.cos(phi) * r;
-      starsPos[i + 1] = Math.sin(phi) * r * 0.6;
-      starsPos[i + 2] = Math.sin(theta) * Math.cos(phi) * r;
-    }
-    starsGeo.setAttribute('position', new THREE.BufferAttribute(starsPos, 3));
-    const starsMat = new THREE.PointsMaterial({
-      size: 0.08,
-      color: 0xff99cc,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-      opacity: 0.5,
-      transparent: true
-    });
-    const stars = new THREE.Points(starsGeo, starsMat);
-    scene.add(stars);
+turtle.done()
 
-    // ---------- 心形公式 ----------
-    function heartX(t) { return 16 * Math.pow(Math.sin(t), 3); }
-    function heartY(t) {
-      return 13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t);
-    }
-
-    // ---------- 生成密集包裹粒子 ----------
-    const scale = 0.09;
-    const particleCount = 8000;
-    const positions = new Float32Array(particleCount * 3);
-    const colors = new Float32Array(particleCount * 3);
-
-    const colorLight = new THREE.Color('#ffb6c1');
-    const colorBase = new THREE.Color('#ff69b4');
-    const colorDeep = new THREE.Color('#c71585');
-
-    for (let i = 0; i < particleCount; i++) {
-      const t = Math.random() * Math.PI * 2;
-      // 因子集中在 0.88~1.02，确保粒子都在外壳附近
-      let factor;
-      if (Math.random() < 0.7) {
-        factor = 0.93 + Math.random() * 0.09; // 主要在外表面
-      } else {
-        factor = 0.88 + Math.random() * 0.14; // 少许内外浮动，补全缝隙
-      }
-
-      let hx = heartX(t) * factor * scale;
-      let hy = heartY(t) * factor * scale;
-
-      // 计算该点的径向方向，用于Z轴厚度分布
-      const edgeDist = Math.sqrt(hx*hx + hy*hy) + 0.001;
-      const nx = hx / edgeDist;
-      const ny = hy / edgeDist;
-
-      // Z轴厚度：在表面法向添加随机偏移，形成前后立体感
-      const zThickness = (Math.random() - 0.5) * 2.0 * scale * 12;
-      // 同时也可以沿径向略微移动，模拟外壳的厚度
-      const radialOffset = (Math.random() - 0.5) * 0.25 * scale * 12;
-      
-      positions[i * 3]     = hx + nx * radialOffset;
-      positions[i * 3 + 1] = hy + ny * radialOffset;
-      positions[i * 3 + 2] = zThickness;
-
-      // 颜色渐变：越外越亮
-      const distRatio = Math.min(1, edgeDist / (17.5 * scale));
-      const mixedColor = colorBase.clone().lerp(colorLight, distRatio * 0.6);
-      mixedColor.lerp(colorDeep, Math.random() * 0.2);
-      
-      colors[i * 3]     = mixedColor.r;
-      colors[i * 3 + 1] = mixedColor.g;
-      colors[i * 3 + 2] = mixedColor.b;
-    }
-
-    const heartGeo = new THREE.BufferGeometry();
-    heartGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    heartGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-
-    // 粒子纹理（更柔和的粉色光点）
-    const canvas = document.createElement('canvas');
-    canvas.width = 32;
-    canvas.height = 32;
-    const ctx = canvas.getContext('2d');
-    ctx.beginPath();
-    ctx.arc(16, 16, 14, 0, 2 * Math.PI);
-    const gradient = ctx.createRadialGradient(16, 16, 0, 16, 16, 14);
-    gradient.addColorStop(0, 'rgba(255,255,255,1)');
-    gradient.addColorStop(0.3, 'rgba(255,200,220,1)');
-    gradient.addColorStop(0.7, 'rgba(255,105,180,0.8)');
-    gradient.addColorStop(1, 'rgba(255,20,147,0)');
-    ctx.fillStyle = gradient;
-    ctx.fill();
-    const particleTexture = new THREE.CanvasTexture(canvas);
-
-    const heartMat = new THREE.PointsMaterial({
-      size: 0.16,                // 粒子尺寸，使得外壳连续
-      map: particleTexture,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-      vertexColors: true,
-      opacity: 0.9,
-      transparent: true
-    });
-
-    const heartPoints = new THREE.Points(heartGeo, heartMat);
-    const heartGroup = new THREE.Group();
-    heartGroup.add(heartPoints);
-    scene.add(heartGroup);
-
-    // ---------- 动画 ----------
-    function animate() {
-      const time = performance.now() * 0.001;
-      heartGroup.rotation.y = time * 0.7;
-      heartGroup.rotation.x = Math.sin(time * 0.4) * 0.1;
-      stars.rotation.y += 0.0002;
-      stars.rotation.x += 0.0001;
-      renderer.render(scene, camera);
-      requestAnimationFrame(animate);
-    }
-    requestAnimationFrame(animate);
-
-    window.addEventListener('resize', () => {
-      camera.aspect = innerWidth / innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(innerWidth, innerHeight);
-    });
-  </script>
-</body>
-</html>
