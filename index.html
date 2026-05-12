@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>冰晶3D双爱心 | Three.js</title>
+  <title>冰晶双爱心 · 呼吸</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -18,17 +18,14 @@
       bottom: 20px;
       width: 100%;
       text-align: center;
-      color: rgba(200, 220, 255, 0.4);
-      font-size: 0.8rem;
+      color: rgba(200, 220, 255, 0.35);
+      font-size: 0.75rem;
       letter-spacing: 0.15em;
       pointer-events: none;
     }
   </style>
-</head>
-<body>
-  <div id="info">DRAG TO ROTATE VIEW</div>
 
-  <!-- 引入 Three.js 核心库以及扩展 -->
+  <!-- 引入 Three.js -->
   <script type="importmap">
     {
       "imports": {
@@ -41,19 +38,14 @@
   <script type="module">
     import * as THREE from 'three';
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-    import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-    import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-    import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
     
-    // --- 初始化场景、相机、渲染器 ---
+    // --- 初始化场景 ---
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x020012);
-    
-    // 添加一点雾效，增加景深感
-    scene.fog = new THREE.FogExp2(0x020012, 0.000015);
+    scene.fog = new THREE.FogExp2(0x020012, 0.00001);
 
     const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.set(5, 2, 12);
+    camera.position.set(4, 1.5, 11);
     camera.lookAt(0, 0, 0);
 
     const renderer = new THREE.WebGLRenderer({ 
@@ -62,234 +54,198 @@
       powerPreference: "high-performance"
     });
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // 限制过高像素比以防手机发烫
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setClearColor(0x020012);
     document.body.appendChild(renderer.domElement);
 
-    // --- 后期处理：辉光效果（UnrealBloomPass）让粒子更冰晶剔透 ---
-    const renderScene = new RenderPass(scene, camera);
-    const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-    bloomPass.threshold = 0.1;
-    bloomPass.strength = 1.2;
-    bloomPass.radius = 0.5;
+    // --- 光源 ---
+    const ambientLight = new THREE.AmbientLight(0x334466);
+    scene.add(ambientLight);
+    const dirLight = new THREE.DirectionalLight(0x99ccff, 0.5);
+    dirLight.position.set(1, 1, 1);
+    scene.add(dirLight);
 
-    const composer = new EffectComposer(renderer);
-    composer.addPass(renderScene);
-    composer.addPass(bloomPass);
-
-    // --- 轨道控制器（允许用户拖动视角，体验3D感）---
+    // --- 相机控制（可拖动视角）---
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
-    controls.rotateSpeed = 0.8;
+    controls.rotateSpeed = 0.6;
     controls.autoRotate = true;
-    controls.autoRotateSpeed = 0.8;
+    controls.autoRotateSpeed = 1.2;
     controls.enableZoom = true;
     controls.zoomSpeed = 0.5;
     controls.target.set(0, 0, 0);
     controls.update();
 
-    // --- 光源设置（让粒子颜色更亮丽）---
-    const ambientLight = new THREE.AmbientLight(0x404066);
-    scene.add(ambientLight);
-    
-    const dirLight1 = new THREE.DirectionalLight(0x99ccff, 0.6);
-    dirLight1.position.set(1, 1, 1);
-    scene.add(dirLight1);
-    
-    const dirLight2 = new THREE.DirectionalLight(0xff88aa, 0.4);
-    dirLight2.position.set(-1, -0.5, -1);
-    scene.add(dirLight2);
-    
-    // 添加一些点光源在爱心周围
-    const pointLight = new THREE.PointLight(0x4488ff, 0.8, 15);
-    pointLight.position.set(2, 1, 2);
-    scene.add(pointLight);
-
-    // --- 背景星尘粒子（增强空间感）---
+    // --- 背景星尘 ---
     function createStarField() {
       const starsGeometry = new THREE.BufferGeometry();
-      const starsCount = 600;
-      const starsPositions = new Float32Array(starsCount * 3);
-      const starsColors = new Float32Array(starsCount * 3);
-      
+      const starsCount = 400;
+      const positions = new Float32Array(starsCount * 3);
       for (let i = 0; i < starsCount * 3; i += 3) {
-        // 分布在较大的球形区域
-        const radius = 15 + Math.random() * 25;
+        const radius = 12 + Math.random() * 20;
         const theta = Math.random() * Math.PI * 2;
         const phi = Math.asin((Math.random() * 2) - 1);
-        
-        starsPositions[i] = Math.cos(theta) * Math.cos(phi) * radius;
-        starsPositions[i+1] = Math.sin(phi) * radius * 0.6;
-        starsPositions[i+2] = Math.sin(theta) * Math.cos(phi) * radius;
-        
-        // 随机淡蓝或淡紫色
-        const colorChoice = Math.random();
-        let r, g, b;
-        if (colorChoice < 0.6) {
-          r = 0.7 + Math.random() * 0.3;
-          g = 0.8 + Math.random() * 0.2;
-          b = 1.0;
-        } else if (colorChoice < 0.85) {
-          r = 0.9 + Math.random() * 0.1;
-          g = 0.7 + Math.random() * 0.3;
-          b = 0.9 + Math.random() * 0.1;
-        } else {
-          r = 1.0;
-          g = 0.8 + Math.random() * 0.2;
-          b = 0.7 + Math.random() * 0.3;
-        }
-        
-        starsColors[i] = r;
-        starsColors[i+1] = g;
-        starsColors[i+2] = b;
+        positions[i] = Math.cos(theta) * Math.cos(phi) * radius;
+        positions[i + 1] = Math.sin(phi) * radius * 0.6;
+        positions[i + 2] = Math.sin(theta) * Math.cos(phi) * radius;
       }
-      
-      starsGeometry.setAttribute('position', new THREE.BufferAttribute(starsPositions, 3));
-      starsGeometry.setAttribute('color', new THREE.BufferAttribute(starsColors, 3));
-      
+      starsGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
       const starsMaterial = new THREE.PointsMaterial({
-        size: 0.12,
-        vertexColors: true,
+        size: 0.1,
+        color: 0xaaccff,
         blending: THREE.AdditiveBlending,
         depthWrite: false,
-        opacity: 0.7,
+        opacity: 0.6,
         transparent: true
       });
-      
-      const stars = new THREE.Points(starsGeometry, starsMaterial);
-      scene.add(stars);
-      return stars;
+      return new THREE.Points(starsGeometry, starsMaterial);
     }
-    
     const starField = createStarField();
+    scene.add(starField);
 
-    // --- 核心：生成实心爱心粒子系统 ---
-    function heartFunction(t) {
-      // 心形参数方程
-      const x = 16 * Math.pow(Math.sin(t), 3);
-      const y = 13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t);
-      return { x, y };
-    }
-
-    function createHeartParticles(colorInner, colorOuter, positionOffset) {
-      const particleCount = 1800; // 粒子数量足够让爱心饱满
-      const positions = new Float32Array(particleCount * 3);
-      const colors = new Float32Array(particleCount * 3);
-
-      // 爱心缩放因子
-      const scale = 0.135;
+    // --- 核心：呼吸爱心生成函数 ---
+    function createBreathingHeart(colorHex, positionOffset) {
+      const particleCount = 2000;
       
-      const innerColor = new THREE.Color(colorInner);
-      const outerColor = new THREE.Color(colorOuter);
+      // 存储每个粒子的“基础位置”（未呼吸时）
+      const basePositions = new Float32Array(particleCount * 3);
+      // 存储每个粒子的随机偏移方向（用于呼吸时沿径向外扩）
+      const offsets = new Float32Array(particleCount * 3);
+      
+      const scale = 0.12;
+      const color = new THREE.Color(colorHex);
+
+      // 心形数学公式
+      function heartX(t) { return 16 * Math.pow(Math.sin(t), 3); }
+      function heartY(t) { return 13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t); }
 
       for (let i = 0; i < particleCount; i++) {
-        // 使用数学模型确保粒子填满内部
+        // 随机角度
         const t = Math.random() * Math.PI * 2;
-        const heartPoint = heartFunction(t);
+        // 内部填充因子：0.1 到 1.0，偏向边缘（让形状更实）
+        const innerFactor = Math.random() < 0.35 ? Math.random() * 0.4 : 0.4 + Math.random() * 0.6;
         
-        // 随机内部因子：0到1之间，用于填充内部
-        const innerFactor = Math.pow(Math.random(), 0.7); // 偏向边缘分布，保证形状清晰
+        let hx = heartX(t);
+        let hy = heartY(t);
         
-        let px = heartPoint.x * innerFactor * scale;
-        let py = heartPoint.y * innerFactor * scale;
+        // 内部填充
+        hx *= innerFactor;
+        hy *= innerFactor;
         
-        // 添加Z轴厚度，制造立体感
-        const zDepth = (Math.random() - 0.5) * 1.8 * scale * 17;
+        // Z轴厚度
+        const zDepth = (Math.random() - 0.5) * 1.5;
         
-        // 应用位置偏移（用于两个爱心错开）
-        positions[i * 3] = px + positionOffset.x;
-        positions[i * 3 + 1] = py + positionOffset.y;
-        positions[i * 3 + 2] = zDepth + positionOffset.z;
+        // 存入基础位置
+        basePositions[i * 3] = hx * scale + positionOffset.x;
+        basePositions[i * 3 + 1] = hy * scale + positionOffset.y;
+        basePositions[i * 3 + 2] = zDepth * scale * 15 + positionOffset.z;
         
-        // 颜色根据位置在内部颜色和外部颜色之间插值
-        const distFromCenter = Math.sqrt(px*px + py*py) / scale;
-        const mixFactor = Math.min(1, distFromCenter / 12);
-        
-        const particleColor = innerColor.clone().lerp(outerColor, mixFactor);
-        
-        colors[i * 3] = particleColor.r;
-        colors[i * 3 + 1] = particleColor.g;
-        colors[i * 3 + 2] = particleColor.b;
+        // 每个粒子的随机外扩方向（归一化）
+        const dx = hx * scale;
+        const dy = hy * scale;
+        const len = Math.sqrt(dx * dx + dy * dy) + 0.001;
+        offsets[i * 3] = dx / len;
+        offsets[i * 3 + 1] = dy / len;
+        offsets[i * 3 + 2] = (Math.random() - 0.5) * 0.5;
       }
 
       const geometry = new THREE.BufferGeometry();
-      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-      geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-
-      // 创建圆形粒子纹理
-      const canvas = document.createElement('canvas');
-      canvas.width = 16;
-      canvas.height = 16;
-      const context = canvas.getContext('2d');
-      context.beginPath();
-      context.arc(8, 8, 6, 0, 2 * Math.PI);
-      const gradient = context.createRadialGradient(8, 8, 0, 8, 8, 6);
-      gradient.addColorStop(0, 'rgba(255,255,255,1)');
-      gradient.addColorStop(0.5, 'rgba(200,230,255,0.9)');
-      gradient.addColorStop(1, 'rgba(100,150,255,0)');
-      context.fillStyle = gradient;
-      context.fill();
+      geometry.setAttribute('position', new THREE.BufferAttribute(basePositions, 3));
       
-      const texture = new THREE.CanvasTexture(canvas);
-      
-      const material = new THREE.PointsMaterial({
-        size: 0.22,
-        map: texture,
-        blending: THREE.AdditiveBlending,
-        depthWrite: true,
-        depthTest: true,
-        vertexColors: true,
-        opacity: 0.9,
+      // 自定义 ShaderMaterial 实现呼吸效果
+      const material = new THREE.ShaderMaterial({
+        uniforms: {
+          uTime: { value: 0 },
+          uColor: { value: color },
+          uOffsets: { value: offsets },
+          uBreathAmp: { value: 0 } // 呼吸幅度：0 到 1
+        },
+        vertexShader: `
+          uniform float uTime;
+          uniform float uBreathAmp;
+          attribute vec3 offset; // 每个粒子的外扩方向
+          
+          varying float vAlpha;
+          
+          void main() {
+            // 呼吸：沿 offset 方向外扩
+            float breath = uBreathAmp * 1.8; // 最大外扩距离
+            vec3 pos = position + offset * breath;
+            
+            vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+            gl_Position = projectionMatrix * mvPosition;
+            
+            gl_PointSize = 220.0 / -mvPosition.z; // 粒子大小随距离衰减
+            vAlpha = 0.9;
+          }
+        `,
+        fragmentShader: `
+          uniform vec3 uColor;
+          varying float vAlpha;
+          
+          void main() {
+            // 圆形粒子
+            float dist = length(gl_PointCoord - vec2(0.5));
+            if (dist > 0.5) discard;
+            
+            // 发光效果
+            float alpha = (1.0 - dist * 2.0) * 0.85;
+            alpha = pow(alpha, 1.5);
+            
+            // 中心更亮
+            float core = 1.0 - dist * 1.5;
+            core = pow(core, 3.0) * 0.6;
+            alpha += core;
+            
+            gl_FragColor = vec4(uColor * 1.3, alpha * vAlpha);
+          }
+        `,
         transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending
       });
 
-      const heartParticles = new THREE.Points(geometry, material);
-      return heartParticles;
+      const points = new THREE.Points(geometry, material);
+      
+      // 把 offsets 作为 attribute 传入 shader
+      geometry.setAttribute('offset', new THREE.BufferAttribute(offsets, 3));
+      
+      return points;
     }
 
-    // --- 创建两个爱心：蓝冰晶（左）和暖金冰晶（右）---
-    const heart1 = createHeartParticles('#4488ff', '#aaccff', new THREE.Vector3(-2.2, 0.3, 0));
-    const heart2 = createHeartParticles('#ff8844', '#ffccaa', new THREE.Vector3(2.2, -0.3, 0));
+    // --- 创建两个爱心 ---
+    const heart1 = createBreathingHeart('#5599ff', new THREE.Vector3(-2.2, 0.2, 0));
+    const heart2 = createBreathingHeart('#ff9966', new THREE.Vector3(2.2, -0.2, 0));
     
     scene.add(heart1);
     scene.add(heart2);
 
-    // --- 外侧旋转光环（增加动态感）---
-    function createOrbitRing(radius, color, positionOffset) {
-      const ringParticleCount = 300;
-      const ringPositions = new Float32Array(ringParticleCount * 3);
-      
-      for (let i = 0; i < ringParticleCount; i++) {
-        const angle = (i / ringParticleCount) * Math.PI * 2;
-        const x = Math.cos(angle) * radius;
-        const z = Math.sin(angle) * radius;
-        const y = Math.sin(angle * 3) * 0.4;
-        
-        ringPositions[i * 3] = x + positionOffset.x;
-        ringPositions[i * 3 + 1] = y + positionOffset.y;
-        ringPositions[i * 3 + 2] = z + positionOffset.z;
+    // --- 光环（可选装饰）---
+    function createRing(radius, colorHex, posOffset) {
+      const ringCount = 250;
+      const ringGeo = new THREE.BufferGeometry();
+      const ringPositions = new Float32Array(ringCount * 3);
+      for (let i = 0; i < ringCount; i++) {
+        const angle = (i / ringCount) * Math.PI * 2;
+        ringPositions[i * 3] = Math.cos(angle) * radius + posOffset.x;
+        ringPositions[i * 3 + 1] = Math.sin(angle * 3) * 0.3 + posOffset.y;
+        ringPositions[i * 3 + 2] = Math.sin(angle) * radius + posOffset.z;
       }
-      
-      const ringGeometry = new THREE.BufferGeometry();
-      ringGeometry.setAttribute('position', new THREE.BufferAttribute(ringPositions, 3));
-      
-      const ringMaterial = new THREE.PointsMaterial({
-        size: 0.08,
-        color: color,
+      ringGeo.setAttribute('position', new THREE.BufferAttribute(ringPositions, 3));
+      const ringMat = new THREE.PointsMaterial({
+        size: 0.06,
+        color: colorHex,
         blending: THREE.AdditiveBlending,
         depthWrite: false,
         opacity: 0.5,
         transparent: true
       });
-      
-      const ring = new THREE.Points(ringGeometry, ringMaterial);
-      return ring;
+      return new THREE.Points(ringGeo, ringMat);
     }
     
-    const ring1 = createOrbitRing(2.4, '#4488ff', new THREE.Vector3(-2.2, 0.3, 0));
-    const ring2 = createOrbitRing(2.4, '#ff8844', new THREE.Vector3(2.2, -0.3, 0));
-    
+    const ring1 = createRing(2.3, '#5599ff', new THREE.Vector3(-2.2, 0.2, 0));
+    const ring2 = createRing(2.3, '#ff9966', new THREE.Vector3(2.2, -0.2, 0));
     scene.add(ring1);
     scene.add(ring2);
 
@@ -297,53 +253,46 @@
     let clock = new THREE.Clock();
 
     function animate() {
-      const delta = clock.getDelta();
-      const elapsedTime = performance.now() * 0.001; // seconds
+      const elapsedTime = performance.now() * 0.001;
       
-      // 自动旋转控制
       controls.update();
       
-      // 让两个爱心自身轻微旋转（模拟呼吸感）
-      heart1.rotation.y = Math.sin(elapsedTime * 0.5) * 0.2;
-      heart1.rotation.x = Math.sin(elapsedTime * 0.3) * 0.1;
+      // 呼吸节奏：用正弦波模拟
+      const breathCycle = Math.sin(elapsedTime * 2.5); // -1 到 1
+      const breathAmp = (breathCycle + 1) / 2;        // 0 到 1
       
-      heart2.rotation.y = Math.sin(elapsedTime * 0.5 + Math.PI) * 0.2;
-      heart2.rotation.x = Math.sin(elapsedTime * 0.3 + Math.PI) * 0.1;
+      // 两个爱心错开呼吸：一个扩张时另一个收缩
+      const breathAmp1 = (Math.sin(elapsedTime * 2.5) + 1) / 2;
+      const breathAmp2 = (Math.sin(elapsedTime * 2.5 + Math.PI) + 1) / 2;
+      
+      // 更新 shader 的呼吸幅度
+      heart1.material.uniforms.uBreathAmp.value = breathAmp1;
+      heart2.material.uniforms.uBreathAmp.value = breathAmp2;
       
       // 光环旋转
-      ring1.rotation.y += 0.005;
-      ring2.rotation.y -= 0.005;
+      ring1.rotation.y += 0.004;
+      ring2.rotation.y -= 0.004;
       
-      // 背景星星缓慢旋转
-      starField.rotation.y += 0.0002;
-      starField.rotation.x += 0.0001;
+      // 星尘微动
+      starField.rotation.y += 0.00015;
       
-      // 点光源微动
-      pointLight.position.x = Math.sin(elapsedTime * 0.7) * 3;
-      pointLight.position.z = Math.cos(elapsedTime * 0.7) * 3;
-      
-      // 使用composer渲染（带辉光效果）
-      composer.render();
-      
+      renderer.render(scene, camera);
       requestAnimationFrame(animate);
     }
 
     animate();
 
-    // --- 窗口大小自适应 ---
-    window.addEventListener('resize', onWindowResize, false);
-    function onWindowResize() {
+    // --- 窗口自适应 ---
+    window.addEventListener('resize', () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
-      composer.setSize(window.innerWidth, window.innerHeight);
-    }
+    });
 
-    // 移动端触摸启动
+    // 移动端确保动画运行
     document.body.addEventListener('touchstart', () => {
       controls.autoRotate = true;
     }, { passive: true });
-
   </script>
 </body>
 </html>
